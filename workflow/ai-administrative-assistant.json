@@ -1,1 +1,703 @@
-
+{
+  "name": "Administrative Expense Automation System",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -368,
+        -16
+      ],
+      "id": "79b8fc14-5386-4f1f-8961-d6a2ab5c513f",
+      "name": "Telegram Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Kamu adalah AI Administrative Assistant.\n\nTugasmu mengubah pesan pengguna menjadi JSON.\n\nJawaban WAJIB hanya berupa JSON valid.\n\nFormat:\n\n{\n  \"tanggal\": \"\",\n  \"kategori\": \"\",\n  \"deskripsi\": \"\",\n  \"nominal\": 0,\n  \"divisi\": \"\"\n}\n\nAturan:\n\n- Jangan memberi penjelasan.\n- Jangan menggunakan markdown.\n- Jangan menambahkan ```json.\n- Jika nominal ditulis \"250 ribu\", ubah menjadi 250000.\n- Jika tanggal tidak disebutkan gunakan tanggal hari ini.\n- Jika divisi tidak disebutkan isi null.\n- Tentukan kategori secara otomatis.\n\nPesan pengguna:\n\n{{ $json.message.text }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        80,
+        0
+      ],
+      "id": "45eeb307-3c21-4cbb-98ba-77e83fd217c5",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        80,
+        176
+      ],
+      "id": "453c2151-2705-40b7-a770-643b4a717b24",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = JSON.parse($input.first().json.text);\n\nreturn [\n  {\n    json: data\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "d533c136-5e25-4d27-9abf-6a0b942b8e05",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "tanggal": "={{ $json.tanggal }}",
+            "kategori": "={{ $json.kategori }}",
+            "deskripsi": "={{ $json.deskripsi }}",
+            "nominal": "={{ $json.nominal }}",
+            "divisi": "={{ $json.divisi }}",
+            "transaction_id": "={{ $json.transaction_id }}",
+            "link_nota": "={{ $json.webViewLink || \"\" }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "transaction_id",
+              "displayName": "transaction_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tanggal",
+              "displayName": "tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "kategori",
+              "displayName": "kategori",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "deskripsi",
+              "displayName": "deskripsi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "nominal",
+              "displayName": "nominal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "divisi",
+              "displayName": "divisi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "link_nota",
+              "displayName": "link_nota",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1728,
+        -144
+      ],
+      "id": "8da8e223-2b57-4738-adf0-8a273539f533",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"transaction_id\": \"={{ 'TRX-' + Date.now() }}\"\n}",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1136,
+        -224
+      ],
+      "id": "dae04a09-b24c-4658-a42a-0ae809a48d7c",
+      "name": "Generate Transaction ID"
+    },
+    {
+      "parameters": {
+        "name": "=Nota_{{ $now.format('YYYY-MM-DD_HH-mm-ss') }}.jpg",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        112,
+        -528
+      ],
+      "id": "4997cb30-0cb0-43ca-a039-aa5fccba1d6e",
+      "name": "Upload file"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "725eb9c7-69f0-4110-b3a7-9722f4580ff5",
+              "leftValue": "={{ $json.message.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "466c13b9-baf7-4afd-93d4-69c7f5dcf700",
+      "name": "IF - Check Message Type"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -368
+      ],
+      "id": "94167f80-df41-4648-addb-55e5dfacdf5a",
+      "name": "Get a file"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "YOUR_OCR_SPACE_API_KEY"
+            },
+            {
+              "name": "language",
+              "value": "eng"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        288,
+        -368
+      ],
+      "id": "5753e4a5-d0a8-47f7-92f3-ee52316f264f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Kamu adalah AI Financial Transaction Parser yang bertugas mengekstrak data transaksi dari hasil OCR nota, invoice, atau struk belanja.\n\nBerikut adalah hasil OCR:\n\n{{ $json.ParsedResults[0].ParsedText }}\n\nTugas:\nEkstrak informasi transaksi dan kembalikan HANYA dalam format JSON yang valid.\n\nFormat JSON:\n\n{\n  \"tanggal\": \"\",\n  \"kategori\": \"\",\n  \"deskripsi\": \"\",\n  \"nominal\": 0,\n  \"divisi\": \"\"\n}\n\nAturan:\n\n1. Jangan memberikan penjelasan apa pun.\n2. Jangan menggunakan Markdown.\n3. Jangan menambahkan teks sebelum atau sesudah JSON.\n4. Output HARUS berupa JSON yang valid.\n\nPenentuan tanggal:\n- Gunakan tanggal transaksi jika tersedia.\n- Format tanggal: DD Month YYYY\n- Jika tidak ditemukan isi null.\n\nPenentuan nominal:\n- Nominal harus berupa angka (integer).\n- Hilangkan Rp, titik, koma, dan spasi.\n- Prioritas nominal:\n  1. GRAND TOTAL\n  2. TOTAL\n  3. TOTAL BAYAR\n  4. JUMLAH\n  5. Jika tidak ada, gunakan nilai transaksi terbesar.\n- Jangan gunakan:\n  - Pajak\n  - Diskon\n  - Pembayaran diterima\n  - Sisa tagihan\n  - Kembalian\n\nPenentuan kategori:\nPilih SATU saja dari:\n- Pembelian\n- Operasional\n- Transportasi\n- Makan\n- Perjalanan Dinas\n- ATK\n- Lainnya\n\nGunakan kategori berdasarkan isi nota.\n\nPenentuan deskripsi:\nBuat deskripsi singkat maksimal 10 kata.\n\nPenentuan divisi:\nJika tidak ada informasi divisi pada nota, isi \"IT\".\n\nContoh output:\n\n{\n  \"tanggal\": \"05 August 2026\",\n  \"kategori\": \"Pembelian\",\n  \"deskripsi\": \"Pembelian mouse wireless\",\n  \"nominal\": 150000,\n  \"divisi\": \"IT\"\n}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        512,
+        -368
+      ],
+      "id": "5e16db4a-a68f-4f32-af34-056c68f90140",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -144
+      ],
+      "id": "99aa451e-f319-4e07-ae2b-d7617988bac2",
+      "name": "Groq Chat Model1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "833ab9ad-e2b2-4d65-97a7-67bd4923e088",
+              "leftValue": "={{ $json.nominal }}",
+              "rightValue": "={{ 0 }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        -144
+      ],
+      "id": "9a731b27-5aa7-436e-a138-5ae6f344abf8",
+      "name": "If - validation layer"
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const parsed = JSON.parse($json.text);\n\n  return {\n    json: parsed\n  };\n} catch (error) {\n  throw new Error(`Gagal parse JSON dari Groq: ${error.message}\\n\\nOutput Groq:\\n${$json.text}`);\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -368
+      ],
+      "id": "969a0829-dd2f-48c0-9c97-acf284b5aac2",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    ...item.json,\n    transaction_id: \"TRX-\" + Date.now()\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        -144
+      ],
+      "id": "3f7ebce9-829c-497d-9a7b-01c4248de519",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {
+          "includeUnpaired": true
+        }
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1488,
+        -512
+      ],
+      "id": "8a406d84-4de7-4a5e-af82-8a9bbe9fb9d2",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "=✅ Transaksi berhasil dicatat!\n\n🆔 ID {{ $json.transaction_id }}\n📅 Tanggal {{ $json.tanggal }}\n📂 Kategori {{ $json.kategori }}\n📝 Deskripsi {{ $json.deskripsi }}\n💰 Nominal Rp {{ Number($json.nominal).toLocaleString('id-ID') }}\n🏢 Divisi {{ $json.divisi }}\n📎 Nota {{ $json.id ? 'https://drive.google.com/file/d/' + $json.id + '/view' : 'Tidak ada nota' }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        -144
+      ],
+      "id": "9d9d6324-ee30-4d95-9429-cbf4340c1c2c",
+      "name": "Send a text message"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"transaction_id\": \"={{ 'TRX-' + Date.now() }}\"\n}",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1184,
+        48
+      ],
+      "id": "8a89fc3c-8aae-4952-b8ba-8f33f94b7734",
+      "name": "Generate Transaction ID1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "833ab9ad-e2b2-4d65-97a7-67bd4923e088",
+              "leftValue": "={{ $json.nominal }}",
+              "rightValue": "={{ 0 }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        752,
+        64
+      ],
+      "id": "e3539a83-62fb-48ee-b49f-41efee1104cf",
+      "name": "If - validation layer1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF - Check Message Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If - validation layer1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Transaction ID": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "IF - Check Message Type": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - validation layer": {
+      "main": [
+        [
+          {
+            "node": "Generate Transaction ID",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If - validation layer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Transaction ID1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - validation layer1": {
+      "main": [
+        [
+          {
+            "node": "Generate Transaction ID1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "tags": []
+}
